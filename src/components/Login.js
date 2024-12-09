@@ -1,3 +1,5 @@
+// src/components/Login.js
+
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -26,7 +28,7 @@ const Login = ({ setLoggedIn, setAccountType }) => {
 
     try {
       const response = await axios.post("http://localhost:5000/login", formData);
-      const { message, accountType } = response.data;
+      const { message, accountType, token } = response.data;
 
       // Display success message
       setMessage(message);
@@ -36,14 +38,22 @@ const Login = ({ setLoggedIn, setAccountType }) => {
       setAccountType(accountType);
       setLoggedIn(true);
 
-      // Redirect based on account type after a delay
+      if (accountType === "Admin" && token) {
+        // Store JWT in localStorage
+        localStorage.setItem("jwtToken", token);
+      } else {
+        // Remove any existing JWTs for non-admin users
+        localStorage.removeItem("jwtToken");
+      }
+
+      // Redirect based on account type after a short delay
       setTimeout(() => {
         if (accountType === "Student") {
           navigate("/chatbot"); // Redirect to Chatbot page
         } else if (accountType === "Admin") {
           navigate("/admin"); // Redirect to Admin Dashboard
         }
-      }, 500); // 2-second delay to display the success message
+      }, 1000); // 1-second delay to display the success message
     } catch (error) {
       console.error("Login error:", error);
       const errorMessage = error.response?.data?.message || "Error during login.";

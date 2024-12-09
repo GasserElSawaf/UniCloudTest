@@ -403,3 +403,77 @@ tr:hover {
   background-color: #e8f5e9;
 }
 
+/* Add these styles to App.css */
+
+/* Edit Button */
+.edit-btn {
+  background-color: #FFC107; /* Amber color for edit */
+  color: white;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.edit-btn:hover {
+  background-color: #FF9800; /* Darker amber on hover */
+}
+
+/* Edit Form */
+.edit-form {
+  width: 90%;
+  max-width: 800px;
+  margin: 20px auto;
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.edit-form h2 {
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.edit-form form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.edit-form form input,
+.edit-form form select {
+  flex: 1 1 45%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.edit-form form button {
+  flex: 1 1 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.edit-form form button[type="submit"] {
+  background-color: #4CAF50;
+  color: white;
+  margin-top: 10px;
+}
+
+.edit-form form button[type="submit"]:hover {
+  background-color: #45a049;
+}
+
+.edit-form form .back-btn {
+  background-color: #f44336;
+  color: white;
+  margin-top: 10px;
+}
+
+.edit-form form .back-btn:hover {
+  background-color: #d32f2f;
+}

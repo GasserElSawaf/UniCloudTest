@@ -1,7 +1,7 @@
 // src/App.js
 
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Home from './components/Home';
 import Register from './components/Register';
 import Login from './components/Login';
@@ -37,9 +37,22 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/login" element={<Login setLoggedIn={setIsLoggedIn} setAccountType={setAccountType} />} />
+        <Route 
+          path="/login" 
+          element={
+            isLoggedIn ? (
+              accountType === "Admin" ? <Navigate to="/admin" /> : <Navigate to="/chatbot" />
+            ) : (
+              <Login setLoggedIn={setIsLoggedIn} setAccountType={setAccountType} />
+            )
+          } 
+        />
         <Route path="/chatbot" element={<Chatbot isLoggedIn={isLoggedIn} />} />
-        <Route path="/admin" element={<AdminDashboard />} /> {/* Admin Dashboard Route */}
+        <Route path="/admin" element={
+          isLoggedIn && accountType === "Admin" ? <AdminDashboard /> : <Navigate to="/login" />
+        } />
+        {/* Redirect unknown routes to home */}
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>
   );
