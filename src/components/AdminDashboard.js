@@ -1,5 +1,3 @@
-// src/components/AdminDashboard.js
-
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -13,33 +11,31 @@ const AdminDashboard = () => {
   const [showRegistrations, setShowRegistrations] = useState(false);
   const [showUniversityInfo, setShowUniversityInfo] = useState(false);
   const [universityInfo, setUniversityInfo] = useState("");
-  const [editingRegistrationId, setEditingRegistrationId] = useState(null);
-  const [editFormData, setEditFormData] = useState({});
-
-  // Retrieve JWT from localStorage
-  const jwtToken = localStorage.getItem("jwtToken");
+  const [editingStudentId, setEditingStudentId] = useState(null);
+  const [editedData, setEditedData] = useState({});
+  
+  const accountType = localStorage.getItem('accountType');
+  const token = localStorage.getItem('token');
 
   useEffect(() => {
-    const accountType = localStorage.getItem('accountType');
     if (accountType !== 'Admin') {
       navigate('/login');
     }
-  }, [navigate]);
+  }, [navigate, accountType]);
+
+  const authHeaders = {
+    headers: { Authorization: `Bearer ${token}` }
+  };
 
   const fetchRegistrations = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await axios.get('http://localhost:5000/registrations', {
-        headers: {
-          'Authorization': `Bearer ${jwtToken}`
-        }
-      });
+      const response = await axios.get('http://localhost:5000/registrations', authHeaders);
       setRegistrations(response.data.registrations);
-      setShowRegistrations(true);
     } catch (err) {
       console.error("Error fetching registrations:", err);
-      setError(err.response?.data?.message || "Failed to fetch registrations.");
+      setError("Failed to fetch registrations.");
     } finally {
       setIsLoading(false);
     }
@@ -48,9 +44,8 @@ const AdminDashboard = () => {
   const fetchUniversityInfo = async () => {
     setError(null);
     try {
-      const response = await axios.get('http://localhost:5000/university-info');
+      const response = await axios.get('http://localhost:5000/university-info', authHeaders);
       setUniversityInfo(response.data.info);
-      setShowUniversityInfo(true);
     } catch (err) {
       console.error("Error fetching university info:", err);
       setError("Failed to load university info.");
@@ -60,74 +55,53 @@ const AdminDashboard = () => {
   const handleToggleRegistrations = async () => {
     if (!showRegistrations) {
       await fetchRegistrations();
-    } else {
-      setShowRegistrations(false);
     }
+    setShowRegistrations(!showRegistrations);
     setShowUniversityInfo(false);
   };
 
   const handleToggleUniversityInfo = async () => {
     if (!showUniversityInfo) {
       await fetchUniversityInfo();
-    } else {
-      setShowUniversityInfo(false);
     }
+    setShowUniversityInfo(!showUniversityInfo);
     setShowRegistrations(false);
   };
 
   const handleLogout = () => {
-    // Clear JWT and other stored data
-    localStorage.removeItem('jwtToken');
-    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('token');
     localStorage.removeItem('accountType');
+    localStorage.setItem('isLoggedIn', 'false');
     navigate('/login');
     window.location.reload();
   };
 
-  // Handle Edit Button Click
-  const handleEditClick = (registration) => {
-    setEditingRegistrationId(registration._id);
-    setEditFormData({ ...registration });
+  const handleEdit = (student) => {
+    setEditingStudentId(student._id);
+    setEditedData({ ...student });
   };
 
-  // Handle form field changes
-  const handleEditFormChange = (e) => {
-    const { name, value } = e.target;
-    setEditFormData(prevData => ({
-      ...prevData,
-      [name]: value
-    }));
+  const handleEditChange = (field, value) => {
+    setEditedData((prev) => ({ ...prev, [field]: value }));
   };
 
-  // Handle form submission for editing
-  const handleEditFormSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError(null);
+  const handleSave = async () => {
     try {
-      // Send PUT request to update the registration
-      await axios.put(`http://localhost:5000/registrations/${editingRegistrationId}`, editFormData, {
-        headers: {
-          'Authorization': `Bearer ${jwtToken}`
-        }
-      });
-      // Update the local state
-      setRegistrations(prevRegs => prevRegs.map(reg => reg._id === editingRegistrationId ? editFormData : reg));
-      setEditingRegistrationId(null);
-      setEditFormData({});
-      alert("Registration updated successfully.");
+      await axios.put(`http://localhost:5000/registrations/${editingStudentId}`, editedData, authHeaders);
+      // Update the local list
+      setRegistrations((prev) =>
+        prev.map((reg) => (reg._id === editingStudentId ? editedData : reg))
+      );
+      setEditingStudentId(null);
     } catch (err) {
       console.error("Error updating registration:", err);
-      setError(err.response?.data?.message || "Failed to update registration.");
-    } finally {
-      setIsLoading(false);
+      alert("Failed to update registration.");
     }
   };
 
-  // Handle Cancel Editing
   const handleCancelEdit = () => {
-    setEditingRegistrationId(null);
-    setEditFormData({});
+    setEditingStudentId(null);
+    setEditedData({});
   };
 
   return (
@@ -141,13 +115,13 @@ const AdminDashboard = () => {
           disabled={isLoading}
           className="fetch-btn"
         >
-          {isLoading && showRegistrations ? "Hiding Registrations..." : showRegistrations ? "Hide Registered Students" : "View All Registered Students"}
+          {isLoading ? "Fetching Registrations..." : "View All Registered Students"}
         </button>
         <button
           onClick={handleToggleUniversityInfo}
           className="info-btn"
         >
-          {showUniversityInfo ? "Hide University Info" : "University Info"}
+          University Info
         </button>
       </div>
 
@@ -174,162 +148,170 @@ const AdminDashboard = () => {
                   <th>Graduation Year</th>
                   <th>GPA</th>
                   <th>Preferred Major</th>
-                  <th>Actions</th> {/* New Column for Actions */}
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {registrations.map((student) => (
-                  <tr key={student._id}>
-                    <td>{student['Student Full Name']}</td>
-                    <td>{student['Date of Birth']}</td>
-                    <td>{student['Gender']}</td>
-                    <td>{student['Nationality']}</td>
-                    <td>{student['National ID']}</td>
-                    <td>{student['Mobile Number']}</td>
-                    <td>{student['Email Address']}</td>
-                    <td>{student['Parent/Guardian Name']}</td>
-                    <td>{student['Parent/Guardian Contact Number']}</td>
-                    <td>{student['Parent/Guardian Email Address']}</td>
-                    <td>{student['High School Name']}</td>
-                    <td>{student['Graduation Year']}</td>
-                    <td>{student['GPA']}</td>
-                    <td>{student['Preferred Major/Program']}</td>
-                    <td>
-                      <button onClick={() => handleEditClick(student)} className="edit-btn">Edit</button>
-                    </td>
-                  </tr>
-                ))}
+                {registrations.map((student) => {
+                  const isEditing = editingStudentId === student._id;
+                  return (
+                    <tr key={student._id}>
+                      <td>
+                        {isEditing ? (
+                          <input
+                            value={editedData["Student Full Name"]}
+                            onChange={(e) => handleEditChange("Student Full Name", e.target.value)}
+                          />
+                        ) : (
+                          student["Student Full Name"]
+                        )}
+                      </td>
+                      <td>
+                        {isEditing ? (
+                          <input
+                            value={editedData["Date of Birth"]}
+                            onChange={(e) => handleEditChange("Date of Birth", e.target.value)}
+                          />
+                        ) : (
+                          student["Date of Birth"]
+                        )}
+                      </td>
+                      <td>
+                        {isEditing ? (
+                          <input
+                            value={editedData["Gender"]}
+                            onChange={(e) => handleEditChange("Gender", e.target.value)}
+                          />
+                        ) : (
+                          student["Gender"]
+                        )}
+                      </td>
+                      <td>
+                        {isEditing ? (
+                          <input
+                            value={editedData["Nationality"]}
+                            onChange={(e) => handleEditChange("Nationality", e.target.value)}
+                          />
+                        ) : (
+                          student["Nationality"]
+                        )}
+                      </td>
+                      <td>
+                        {isEditing ? (
+                          <input
+                            value={editedData["National ID"]}
+                            onChange={(e) => handleEditChange("National ID", e.target.value)}
+                          />
+                        ) : (
+                          student["National ID"]
+                        )}
+                      </td>
+                      <td>
+                        {isEditing ? (
+                          <input
+                            value={editedData["Mobile Number"]}
+                            onChange={(e) => handleEditChange("Mobile Number", e.target.value)}
+                          />
+                        ) : (
+                          student["Mobile Number"]
+                        )}
+                      </td>
+                      <td>
+                        {isEditing ? (
+                          <input
+                            value={editedData["Email Address"]}
+                            onChange={(e) => handleEditChange("Email Address", e.target.value)}
+                          />
+                        ) : (
+                          student["Email Address"]
+                        )}
+                      </td>
+                      <td>
+                        {isEditing ? (
+                          <input
+                            value={editedData["Parent/Guardian Name"]}
+                            onChange={(e) => handleEditChange("Parent/Guardian Name", e.target.value)}
+                          />
+                        ) : (
+                          student["Parent/Guardian Name"]
+                        )}
+                      </td>
+                      <td>
+                        {isEditing ? (
+                          <input
+                            value={editedData["Parent/Guardian Contact Number"]}
+                            onChange={(e) => handleEditChange("Parent/Guardian Contact Number", e.target.value)}
+                          />
+                        ) : (
+                          student["Parent/Guardian Contact Number"]
+                        )}
+                      </td>
+                      <td>
+                        {isEditing ? (
+                          <input
+                            value={editedData["Parent/Guardian Email Address"]}
+                            onChange={(e) => handleEditChange("Parent/Guardian Email Address", e.target.value)}
+                          />
+                        ) : (
+                          student["Parent/Guardian Email Address"]
+                        )}
+                      </td>
+                      <td>
+                        {isEditing ? (
+                          <input
+                            value={editedData["High School Name"]}
+                            onChange={(e) => handleEditChange("High School Name", e.target.value)}
+                          />
+                        ) : (
+                          student["High School Name"]
+                        )}
+                      </td>
+                      <td>
+                        {isEditing ? (
+                          <input
+                            value={editedData["Graduation Year"]}
+                            onChange={(e) => handleEditChange("Graduation Year", e.target.value)}
+                          />
+                        ) : (
+                          student["Graduation Year"]
+                        )}
+                      </td>
+                      <td>
+                        {isEditing ? (
+                          <input
+                            value={editedData["GPA"]}
+                            onChange={(e) => handleEditChange("GPA", e.target.value)}
+                          />
+                        ) : (
+                          student["GPA"]
+                        )}
+                      </td>
+                      <td>
+                        {isEditing ? (
+                          <input
+                            value={editedData["Preferred Major/Program"]}
+                            onChange={(e) => handleEditChange("Preferred Major/Program", e.target.value)}
+                          />
+                        ) : (
+                          student["Preferred Major/Program"]
+                        )}
+                      </td>
+                      <td>
+                        {isEditing ? (
+                          <>
+                            <button onClick={handleSave}>Save</button>
+                            <button onClick={handleCancelEdit}>Cancel</button>
+                          </>
+                        ) : (
+                          <button onClick={() => handleEdit(student)}>Edit</button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
-        </div>
-      )}
-
-      {editingRegistrationId && (
-        <div className="edit-form">
-          <h2>Edit Registration</h2>
-          <form onSubmit={handleEditFormSubmit}>
-            <input
-              type="text"
-              name="Student Full Name"
-              placeholder="Student Full Name"
-              value={editFormData['Student Full Name'] || ''}
-              onChange={handleEditFormChange}
-              required
-            />
-            <input
-              type="text"
-              name="Date of Birth"
-              placeholder="Date of Birth (DD-MM-YYYY)"
-              value={editFormData['Date of Birth'] || ''}
-              onChange={handleEditFormChange}
-              required
-            />
-            <select
-              name="Gender"
-              value={editFormData['Gender'] || ''}
-              onChange={handleEditFormChange}
-              required
-            >
-              <option value="">Select Gender</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-            </select>
-            <input
-              type="text"
-              name="Nationality"
-              placeholder="Nationality"
-              value={editFormData['Nationality'] || ''}
-              onChange={handleEditFormChange}
-              required
-            />
-            <input
-              type="text"
-              name="National ID"
-              placeholder="National ID"
-              value={editFormData['National ID'] || ''}
-              onChange={handleEditFormChange}
-              required
-            />
-            <input
-              type="text"
-              name="Mobile Number"
-              placeholder="Mobile Number"
-              value={editFormData['Mobile Number'] || ''}
-              onChange={handleEditFormChange}
-              required
-            />
-            <input
-              type="email"
-              name="Email Address"
-              placeholder="Email Address"
-              value={editFormData['Email Address'] || ''}
-              onChange={handleEditFormChange}
-              required
-            />
-            <input
-              type="text"
-              name="Parent/Guardian Name"
-              placeholder="Parent/Guardian Name"
-              value={editFormData['Parent/Guardian Name'] || ''}
-              onChange={handleEditFormChange}
-              required
-            />
-            <input
-              type="text"
-              name="Parent/Guardian Contact Number"
-              placeholder="Parent/Guardian Contact Number"
-              value={editFormData['Parent/Guardian Contact Number'] || ''}
-              onChange={handleEditFormChange}
-              required
-            />
-            <input
-              type="email"
-              name="Parent/Guardian Email Address"
-              placeholder="Parent/Guardian Email Address"
-              value={editFormData['Parent/Guardian Email Address'] || ''}
-              onChange={handleEditFormChange}
-              required
-            />
-            <input
-              type="text"
-              name="High School Name"
-              placeholder="High School Name"
-              value={editFormData['High School Name'] || ''}
-              onChange={handleEditFormChange}
-              required
-            />
-            <input
-              type="text"
-              name="Graduation Year"
-              placeholder="Graduation Year"
-              value={editFormData['Graduation Year'] || ''}
-              onChange={handleEditFormChange}
-              required
-            />
-            <input
-              type="text"
-              name="GPA"
-              placeholder="GPA"
-              value={editFormData['GPA'] || ''}
-              onChange={handleEditFormChange}
-              required
-            />
-            <input
-              type="text"
-              name="Preferred Major/Program"
-              placeholder="Preferred Major/Program"
-              value={editFormData['Preferred Major/Program'] || ''}
-              onChange={handleEditFormChange}
-              required
-            />
-            <button type="submit" disabled={isLoading}>
-              {isLoading ? "Updating..." : "Update"}
-            </button>
-            <button type="button" className="back-btn" onClick={handleCancelEdit}>
-              Cancel
-            </button>
-          </form>
         </div>
       )}
 

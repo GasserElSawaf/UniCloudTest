@@ -1,5 +1,3 @@
-// src/components/Login.js
-
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -10,11 +8,11 @@ const Login = ({ setLoggedIn, setAccountType }) => {
   const [formData, setFormData] = useState({
     username: "",
     password: "",
-    accountType: "Student", // Default account type
+    accountType: "Student",
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState(""); // State for success or error message
-  const [messageType, setMessageType] = useState(""); // 'success' or 'error'
+  const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState("");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -24,36 +22,28 @@ const Login = ({ setLoggedIn, setAccountType }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    setMessage(""); // Clear previous messages
+    setMessage("");
 
     try {
       const response = await axios.post("http://localhost:5000/login", formData);
       const { message, accountType, token } = response.data;
 
-      // Display success message
       setMessage(message);
       setMessageType("success");
 
-      // Update login and account type state
       setAccountType(accountType);
       setLoggedIn(true);
 
-      if (accountType === "Admin" && token) {
-        // Store JWT in localStorage
-        localStorage.setItem("jwtToken", token);
-      } else {
-        // Remove any existing JWTs for non-admin users
-        localStorage.removeItem("jwtToken");
-      }
+      // Store the token in localStorage
+      localStorage.setItem('token', token);
 
-      // Redirect based on account type after a short delay
       setTimeout(() => {
         if (accountType === "Student") {
-          navigate("/chatbot"); // Redirect to Chatbot page
+          navigate("/chatbot");
         } else if (accountType === "Admin") {
-          navigate("/admin"); // Redirect to Admin Dashboard
+          navigate("/admin");
         }
-      }, 1000); // 1-second delay to display the success message
+      }, 500);
     } catch (error) {
       console.error("Login error:", error);
       const errorMessage = error.response?.data?.message || "Error during login.";

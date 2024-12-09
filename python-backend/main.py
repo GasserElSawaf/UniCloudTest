@@ -1,4 +1,4 @@
-# app.py
+# main.py
 
 import os
 import re
@@ -9,9 +9,12 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 from langchain.chat_models import AzureChatOpenAI
 from langchain import PromptTemplate, LLMChain
-from docx import Document  # Added import for docx
+from docx import Document  # For reading .docx files
 
+# Configure Logging
 logging.basicConfig(level=logging.INFO)
+
+# Load Environment Variables (if any)
 load_dotenv()
 
 app = Flask(__name__)
@@ -29,6 +32,7 @@ os.environ["AZURE_OPENAI_API_KEY"] = OPENAI_API_KEY
 os.environ["AZURE_OPENAI_ENDPOINT"] = OPENAI_API_BASE
 os.environ["OPENAI_API_TYPE"] = OPENAI_API_TYPE
 
+# Initialize LangChain LLM
 llm = AzureChatOpenAI(
     openai_api_version=api_version,
     azure_deployment=deployment_name,
